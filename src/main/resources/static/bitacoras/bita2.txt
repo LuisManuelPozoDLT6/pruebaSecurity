@@ -1,0 +1,34 @@
+CREATE TABLE database_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  table_name VARCHAR(50) NOT NULL,
+  action_type VARCHAR(10) NOT NULL,
+  action_time DATETIME NOT NULL,
+  user_id INT NOT NULL,
+  record_id INT NOT NULL,
+  record_data TEXT
+);
+
+DELIMITER //
+
+CREATE TRIGGER record_insert AFTER INSERT ON database.*
+FOR EACH ROW
+BEGIN
+  INSERT INTO database_log (table_name, action_type, action_time, user_id, record_id, record_data)
+  VALUES (SUBSTRING_INDEX(TRIGGER_NAME, '_', -1), 'insert', NOW(), @user_id, NEW.id, JSON_OBJECT());
+END//
+
+CREATE TRIGGER record_update AFTER UPDATE ON database.*
+FOR EACH ROW
+BEGIN
+  INSERT INTO database_log (table_name, action_type, action_time, user_id, record_id, record_data)
+  VALUES (SUBSTRING_INDEX(TRIGGER_NAME, '_', -1), 'update', NOW(), @user_id, OLD.id, JSON_OBJECT());
+END//
+
+CREATE TRIGGER record_delete AFTER DELETE ON database.*
+FOR EACH ROW
+BEGIN
+  INSERT INTO database_log (table_name, action_type, action_time, user_id, record_id, record_data)
+  VALUES (SUBSTRING_INDEX(TRIGGER_NAME, '_', -1), 'delete', NOW(), @user_id, OLD.id, JSON_OBJECT());
+END//
+
+DELIMITER ;

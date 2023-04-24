@@ -1,0 +1,67 @@
+DROP TABLE IF EXISTS bitacora_category;
+CREATE TABLE `bitacora_category` (
+  `idbitacora` int(11) NOT NULL AUTO_INCREMENT,
+  `accion` varchar(2000) DEFAULT NULL,
+  `fecha` datetime,
+  `executedSQL` varchar(2000) DEFAULT NULL,
+  `reverseSQL` varchar(2000) DEFAULT NULL,
+  PRIMARY KEY (`idbitacora`)
+);
+
+DROP TRIGGER IF EXISTS after_insert_category;
+DELIMITER $$
+CREATE TRIGGER after_insert_category
+ AFTER INSERT ON category
+ FOR EACH ROW
+BEGIN
+ insert into bitacora_category ( accion,fecha, executedSQL, reverseSQL )
+	values(
+    "INSERT",
+    now(),
+    -- La funcion CONCAT, junta dos valores como una cadena de caracteres.
+    -- construyendo el SQL que elimina el registro recien insertado
+    CONCAT("INSERT INTO category (id, name, status) VALUES (",NEW.id,", """,NEW.name,""", """,NEW.status,""");"),
+    CONCAT("DELETE FROM category WHERE id = ",  NEW.id,";")
+);
+END;
+$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS after_delete_category;
+DELIMITER $$
+CREATE TRIGGER after_delete_category
+ AFTER DELETE ON category
+ FOR EACH ROW
+BEGIN
+ insert into bitacora_category( accion,fecha, executedSQL, reverseSQL )
+values(
+	"DELETE",
+	now(),
+    -- La funcion CONCAT, junta dos valores como una cadena de caracteres.
+    -- construyendo el SQL que elimina el registro recien insertado
+    CONCAT("DELETE FROM category WHERE id = ",OLD.id,";"),
+    CONCAT("INSERT INTO category ( is, name, status) VALUES (",OLD.id,", """,OLD.name,""", """,OLD.status,""");")
+);
+END;
+$$
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS after_update_category;
+DELIMITER $$
+CREATE TRIGGER after_update_category
+ AFTER UPDATE ON category
+ FOR EACH ROW
+BEGIN
+ insert into bitacora_category(accion, fecha, executedSQL, reverseSQL)
+values(
+	"UPDATE",
+    now(),
+    -- La funcion CONCAT, junta dos valores como una cadena de caracteres.
+    -- construyendo el SQL que elimina el registro recien insertado
+    CONCAT("UPDATE category SET id = ",NEW.id,", name = """,NEW.name,""", status = """,NEW.status,""" WHERE id = ", OLD.id,";"),
+    CONCAT("UPDATE category SET id = ",OLD.id,", name = """,OLD.name,""", status = """,OLD.status,""" WHERE id = ", NEW.id,";")
+);
+END;
+$$
+DELIMITER ;
